@@ -10,7 +10,7 @@ pip3 install pymstodo
 
 ## Requirements
 * python >= 3.10
-* requests_oauthlib >= 1.3.0
+* authlib >= 1.2.1
 
 ## Usage
 1. [Get an API key](https://github.com/inbalboa/pymstodo/blob/master/GET_KEY.md) before using `pymstodo`.
