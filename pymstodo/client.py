@@ -310,9 +310,11 @@ class ToDoConnection:
         expire_time = self.token['expires_at'] - 300
         if now >= expire_time:
             token_url = f'{ToDoConnection._authority}{ToDoConnection._token_endpoint}'
-            oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope,
-                                    token=self.token, redirect_uri=ToDoConnection._redirect)
-            new_token = oa_sess.refresh_token(token_url, client_id=self.client_id, client_secret=self.client_secret)
+            oa_sess = OAuth2Session(self.client_id,
+                                    scope=ToDoConnection._scope,
+                                    token=self.token,
+                                    redirect_uri=ToDoConnection._redirect)
+            new_token = oa_sess.refresh_token(token_url, client_secret=self.client_secret)
             self.token = new_token
 
     def get_lists(self, limit: int | None = 99) -> list[TaskList]:

@@ -8,6 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10"
 Authlib = "^1.2.1"
+requests = "^2.25.0"
 
 
 [build-system]
