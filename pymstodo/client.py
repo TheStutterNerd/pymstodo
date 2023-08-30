@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Any, Literal, TypedDict
 from zoneinfo import ZoneInfo
 
-from requests_oauthlib import OAuth2Session
+from authlib.integrations.requests_client import OAuth2Session
 
 from .windows_zones_adapter import get_zoneinfo_name_by_windows_zone
 
@@ -234,6 +234,33 @@ class Task:
         return TaskStatus(self.status)
 
 
+@dataclasses.dataclass
+class ChecklistItem:
+    '''**To-Do ChecklistItem** represents the steps/checklist item associated with a task'''
+
+    checklist_id: str
+    '''The identifier of the step/checklist item'''
+
+    displayName: str
+    '''The name of the checklist item'''
+
+    isChecked: str
+    '''`True` if checklist is completed'''
+
+    createdDateTime: str
+    '''The date and time in the specified timezone that the checklist item was created at'''
+
+    checkedDateTime: str
+    '''The date and time in the specified timezone that the checklist item was completed at'''
+
+    def __init__(self, **kwargs: Any) -> None:
+        for f in dataclasses.fields(self):
+            setattr(self, f.name, kwargs.get('id' if f.name == 'checklist_id' else f.name))
+
+    def __str__(self) -> str:
+        return self.displayName.replace('|', '—').strip()
+
+
 class ToDoConnection:
     '''**To-Do connection** is your entry point to the To-Do API
 
@@ -243,7 +270,7 @@ class ToDoConnection:
         token: Token obtained by method `get_token`
     '''
     _redirect: str = 'https://localhost/login/authorized'
-    _scope: str = 'openid Tasks.ReadWrite'
+    _scope: str = 'openid Tasks.ReadWrite offline_access'
     _authority: str = 'https://login.microsoftonline.com/common'
     _authorize_endpoint: str = '/oauth2/v2.0/authorize'
     _token_endpoint: str = '/oauth2/v2.0/token'
@@ -267,7 +294,7 @@ class ToDoConnection:
         oa_sess = OAuth2Session(client_id, scope=ToDoConnection._scope, redirect_uri=ToDoConnection._redirect)
 
         authorize_url = f'{ToDoConnection._authority}{ToDoConnection._authorize_endpoint}'
-        authorization_url, _ = oa_sess.authorization_url(authorize_url)
+        authorization_url, _ = oa_sess.create_authorization_url(authorize_url)
 
         return authorization_url
 
@@ -277,7 +304,6 @@ class ToDoConnection:
         oa_sess = OAuth2Session(client_id, scope=ToDoConnection._scope, redirect_uri=ToDoConnection._redirect)
         token_url = f'{ToDoConnection._authority}{ToDoConnection._token_endpoint}'
         return oa_sess.fetch_token(token_url, client_secret=client_secret, authorization_response=redirect_resp)
-
 
     def _refresh_token(self) -> None:
         now = time.time()
@@ -309,7 +335,6 @@ class ToDoConnection:
 
         contents = json.loads(resp.content.decode())['value']
         return [TaskList(**list_data) for list_data in contents]
-
 
     def create_list(self, name: str) -> TaskList:
         '''Create a new task list
@@ -436,7 +461,6 @@ class ToDoConnection:
             contents = contents[:limit]
         return [Task(**task_data) for task_data in contents]
 
-
     def create_task(self, title: str, list_id: str, due_date: datetime | None = None, body_text: str | None = None) -> Task:
         '''Create a new task in a specified task list
 
@@ -545,3 +569,24 @@ class ToDoConnection:
             PymstodoError: An error occurred accessing the API'''
         return self.update_task(task_id, list_id, status='completed')
 
+    def get_checklists(self, task_id: str, list_id: str) -> list[ChecklistItem]:
+        '''Get the nested steps/checklists inside a TaskList
+
+        Args:
+            task_id: Unique identifier for the task
+            list_id: Unique identifier for the task list
+
+        Returns:
+            A list of the steps/checklists inside a TaskList
+
+        Raises:
+            PymstodoError: An error occurred accessing the API
+        '''
+        self._refresh_token()
+        oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
+        resp = oa_sess.get(f'{ToDoConnection._base_api_url}lists/{list_id}/tasks/{task_id}/checklistItems')
+        if not resp.ok:
+            raise PymstodoError(resp.status_code, resp.reason)
+
+        contents = json.loads(resp.content.decode())['value']
+        return [ChecklistItem(**checklist_data) for checklist_data in contents]
