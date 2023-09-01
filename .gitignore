@@ -41,9 +41,6 @@ MANIFEST
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Virtual environment files
-*.lock
-
 # Unit test / coverage reports
 htmlcov/
 .tox/
