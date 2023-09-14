@@ -423,7 +423,7 @@ class ToDoConnection:
 
         return True
 
-    def get_tasks(self, list_id: str, limit: int | None = 1000, status: TaskStatusFilter | None = TaskStatusFilter.NOT_COMPLETED) -> list[Task]:
+    def get_tasks(self, list_id: str, limit: int | None = 0, status: TaskStatusFilter | None = TaskStatusFilter.NOT_COMPLETED) -> list[Task]:
         '''Get tasks by a specified task list
 
         Args:
@@ -444,21 +444,22 @@ class ToDoConnection:
             TaskStatusFilter.NOT_COMPLETED: "filter=status ne 'completed'",
             TaskStatusFilter.ALL: None
         }
-        eff_limit = limit or 1000
+        _top = f"top={limit}" if limit != 0 else ""
         params = (
             filters.get(status or TaskStatusFilter.NOT_COMPLETED, filters[TaskStatusFilter.NOT_COMPLETED]),
-            f'top={eff_limit}'
+            _top
         )
         params_str = '&$'.join(filter(None, params))
         url = f'{ToDoConnection._base_api_url}lists/{list_id}/tasks?${params_str}'
         contents: list[dict[str, Any]] = []
-        while (len(contents) < eff_limit or eff_limit <= 0) and url:
-            resp = oa_sess.get(url)
-            if not resp.ok:
-                raise PymstodoError(resp.status_code, resp.reason)
-            resp_content = json.loads(resp.content.decode())
-            url = resp_content.get('@odata.nextLink')
-            contents.extend(resp_content['value'])
+
+        resp = oa_sess.get(url)
+        if not resp.ok:
+            raise PymstodoError(resp.status_code, resp.reason)
+        resp_content = json.loads(resp.content.decode())
+        url = resp_content.get('@odata.nextLink')
+        contents.extend(resp_content['value'])
+
         if limit:
             contents = contents[:limit]
         return [Task(**task_data) for task_data in contents]
