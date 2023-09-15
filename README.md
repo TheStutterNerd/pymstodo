@@ -35,13 +35,14 @@ lists = todo_client.get_lists()
 task_list = lists[0]
 tasks = todo_client.get_tasks(task_list.list_id)
 
+# print(task_list)
+# print(*tasks, sep='\n')
+
 for task in tasks:
     print(task)
     if task.steps:
         print("Steps:", *task.steps, sep=" ")
 
-print(task_list)
-print(*tasks, sep='\n')
 ```
 
 3. Full documentation: https://inbalboa.github.io/pymstodo/
