@@ -1,20 +1,25 @@
 # pymstodo ✔️
+
 [![PyPI](https://img.shields.io/pypi/v/pymstodo.svg)](https://pypi.org/project/pymstodo/) [![Build Status](https://github.com/inbalboa/pymstodo/actions/workflows/main.yml/badge.svg)](https://github.com/inbalboa/pymstodo/actions/workflows/main.yml) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 ### Python wrapper to deal with [Microsoft To Do](https://to-do.live.com).
 
 ## Installation
+
 ```
-pip3 install pymstodo
+pip install git+https://github.com/TheStutterNerd/pymstodo.git
 ```
 
 ## Requirements
-* python >= 3.10
-* authlib >= 1.2.1
+
+- python >= 3.10
+- authlib >= 1.2.1
 
 ## Usage
+
 1. [Get an API key](https://github.com/inbalboa/pymstodo/blob/master/GET_KEY.md) before using `pymstodo`.
 2. Use it to initialize client. Here is an example:
+
 ```python
 from pymstodo import ToDoConnection
 
@@ -30,9 +35,15 @@ lists = todo_client.get_lists()
 task_list = lists[0]
 tasks = todo_client.get_tasks(task_list.list_id)
 
+for task in tasks:
+    print(task)
+    if task.steps:
+        print("Steps:", *task.steps, sep=" ")
+
 print(task_list)
 print(*tasks, sep='\n')
 ```
+
 3. Full documentation: https://inbalboa.github.io/pymstodo/
 
 4. API description by Microsoft see at https://docs.microsoft.com/en-us/graph/api/resources/todo-overview
