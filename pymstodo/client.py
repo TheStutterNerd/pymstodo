@@ -631,4 +631,4 @@ class ToDoConnection:
 
         contents = json.loads(resp.content.decode())
 
-        return Task(**contents)
+        return ChecklistItem(**contents)
