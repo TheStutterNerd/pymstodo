@@ -603,3 +603,31 @@ class ToDoConnection:
 
         contents = json.loads(resp.content.decode())['value']
         return [ChecklistItem(**checklist_data) for checklist_data in contents]
+
+    def create_checklist(self, display_name: str, list_id: str, task_id: str, created_date_time: datetime | None = None, is_checked: bool = False) -> ChecklistItem:
+        '''Create a new ChecklistItem/step in a specified task
+
+        Args:
+            display_name: A brief description of the step
+            created_date_time: The date and time that the step is added
+            is_checked: If the step is completed on creation or not
+
+        Returns:
+            A created ChecklistItem
+
+        Raises:
+            PymstodoError: An error occurred accessing the API'''
+        self._refresh_token()
+        oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
+        step_data: dict[str, Any] = {'displayName': display_name}
+        if created_date_time:
+            step_data['createdDateTime'] = created_date_time.strftime('%Y-%m-%dT%H:%M:%S.0000000')
+        if is_checked:
+            step_data['isChecked'] = is_checked
+        resp = oa_sess.post(f'{ToDoConnection._base_api_url}lists/{list_id}/tasks/{task_id}/checklistItems', json=step_data)
+        if not resp.ok:
+            raise PymstodoError(resp.status_code, resp.reason)
+
+        contents = json.loads(resp.content.decode())
+
+        return Task(**contents)
