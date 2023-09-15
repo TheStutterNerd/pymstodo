@@ -10,8 +10,6 @@ from authlib.integrations.requests_client import OAuth2Session
 
 from .windows_zones_adapter import get_zoneinfo_name_by_windows_zone
 
-from types import SimpleNamespace
-
 
 class PymstodoError(Exception):
     '''Basic Pymstodo exception'''
