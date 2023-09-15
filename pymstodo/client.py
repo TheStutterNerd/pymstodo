@@ -10,6 +10,8 @@ from authlib.integrations.requests_client import OAuth2Session
 
 from .windows_zones_adapter import get_zoneinfo_name_by_windows_zone
 
+from types import SimpleNamespace
+
 
 class PymstodoError(Exception):
     '''Basic Pymstodo exception'''
@@ -86,6 +88,33 @@ class TaskStatusFilter(Enum):
     COMPLETED = 'completed'
     NOT_COMPLETED = 'notCompleted'
     ALL = 'all'
+
+
+@dataclasses.dataclass
+class ChecklistItem:
+    '''**To-Do ChecklistItem** represents the steps/checklist item associated with a task'''
+
+    checklist_id: str
+    '''The identifier of the step/checklist item'''
+
+    displayName: str
+    '''The name of the checklist item'''
+
+    isChecked: str
+    '''`True` if checklist is completed'''
+
+    createdDateTime: str
+    '''The date and time in the specified timezone that the checklist item was created at'''
+
+    checkedDateTime: str
+    '''The date and time in the specified timezone that the checklist item was completed at'''
+
+    def __init__(self, **kwargs: Any) -> None:
+        for f in dataclasses.fields(self):
+            setattr(self, f.name, kwargs.get('id' if f.name == 'checklist_id' else f.name))
+
+    def __str__(self) -> str:
+        return self.displayName.replace('|', '—').strip()
 
 
 @dataclasses.dataclass
@@ -166,6 +195,9 @@ class Task:
     startDateTime: _DateTimeTimeZone
     '''The date and time in the specified time zone at which the task is scheduled to start. Uses ISO 8601 format'''
 
+    checklistItems: list[ChecklistItem]
+    '''The steps associated with the task'''
+
     status: str
 
     def __init__(self, **kwargs: Any) -> None:
@@ -233,32 +265,12 @@ class Task:
         '''Indicates the state or progress of the task'''
         return TaskStatus(self.status)
 
-
-@dataclasses.dataclass
-class ChecklistItem:
-    '''**To-Do ChecklistItem** represents the steps/checklist item associated with a task'''
-
-    checklist_id: str
-    '''The identifier of the step/checklist item'''
-
-    displayName: str
-    '''The name of the checklist item'''
-
-    isChecked: str
-    '''`True` if checklist is completed'''
-
-    createdDateTime: str
-    '''The date and time in the specified timezone that the checklist item was created at'''
-
-    checkedDateTime: str
-    '''The date and time in the specified timezone that the checklist item was completed at'''
-
-    def __init__(self, **kwargs: Any) -> None:
-        for f in dataclasses.fields(self):
-            setattr(self, f.name, kwargs.get('id' if f.name == 'checklist_id' else f.name))
-
-    def __str__(self) -> str:
-        return self.displayName.replace('|', '—').strip()
+    @property
+    def steps(self) -> list[ChecklistItem] | None:
+        if self.checklistItems:
+            steps = [ChecklistItem(**checklist_data) for checklist_data in self.checklistItems]
+            return steps
+        return None
 
 
 class ToDoConnection:
