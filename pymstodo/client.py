@@ -609,7 +609,8 @@ class ToDoConnection:
 
         Args:
             display_name: A brief description of the step
-            created_date_time: The date and time that the step is added
+            task_id: Unique identifier for the task
+            list_id: Unique identifier for the task list
             is_checked: If the step is completed on creation or not
 
         Returns:
