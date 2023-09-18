@@ -90,10 +90,10 @@ class TaskStatusFilter(Enum):
 
 @dataclasses.dataclass
 class ChecklistItem:
-    '''**To-Do ChecklistItem** represents the steps/checklist item associated with a task'''
+    '''**To-Do ChecklistItem** represents the checklist item associated with a task'''
 
     checklist_id: str
-    '''The identifier of the step/checklist item'''
+    '''The identifier of the checklist item'''
 
     displayName: str
     '''The name of the checklist item'''
@@ -194,7 +194,7 @@ class Task:
     '''The date and time in the specified time zone at which the task is scheduled to start. Uses ISO 8601 format'''
 
     checklistItems: list[ChecklistItem]
-    '''The steps associated with the task'''
+    '''The checklists associated with the task'''
 
     status: str
 
@@ -264,10 +264,9 @@ class Task:
         return TaskStatus(self.status)
 
     @property
-    def steps(self) -> list[ChecklistItem] | None:
+    def checklists(self) -> list[ChecklistItem] | None:
         if self.checklistItems:
-            steps = [ChecklistItem(**checklist_data) for checklist_data in self.checklistItems]
-            return steps
+            return [ChecklistItem(**checklist_data) for checklist_data in self.checklistItems]
         return None
 
 
@@ -583,14 +582,14 @@ class ToDoConnection:
         return self.update_task(task_id, list_id, status='completed')
 
     def get_checklists(self, task_id: str, list_id: str) -> list[ChecklistItem]:
-        '''Get the nested steps/checklists inside a TaskList
+        '''Get the nested checklists inside a TaskList
 
         Args:
             task_id: Unique identifier for the task
             list_id: Unique identifier for the task list
 
         Returns:
-            A list of the steps/checklists inside a TaskList
+            A list of the checklists inside a TaskList
 
         Raises:
             PymstodoError: An error occurred accessing the API
@@ -605,13 +604,13 @@ class ToDoConnection:
         return [ChecklistItem(**checklist_data) for checklist_data in contents]
 
     def create_checklist(self, display_name: str, list_id: str, task_id: str, created_date_time: datetime | None = None, is_checked: bool = False) -> ChecklistItem:
-        '''Create a new ChecklistItem/step in a specified task
+        '''Create a new ChecklistItem in a specified Task
 
         Args:
-            display_name: A brief description of the step
+            display_name: A brief description of the checklist
             task_id: Unique identifier for the task
             list_id: Unique identifier for the task list
-            is_checked: If the step is completed on creation or not
+            is_checked: If the checklist is completed on creation or not
 
         Returns:
             A created ChecklistItem
@@ -620,15 +619,99 @@ class ToDoConnection:
             PymstodoError: An error occurred accessing the API'''
         self._refresh_token()
         oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
-        step_data: dict[str, Any] = {'displayName': display_name}
+        checklist_data: dict[str, Any] = {'displayName': display_name}
         if created_date_time:
-            step_data['createdDateTime'] = created_date_time.strftime('%Y-%m-%dT%H:%M:%S.0000000')
+            checklist_data['createdDateTime'] = created_date_time.strftime('%Y-%m-%dT%H:%M:%S.0000000')
         if is_checked:
-            step_data['isChecked'] = is_checked
-        resp = oa_sess.post(f'{ToDoConnection._base_api_url}lists/{list_id}/tasks/{task_id}/checklistItems', json=step_data)
+            checklist_data['isChecked'] = is_checked
+        resp = oa_sess.post(f'{ToDoConnection._base_api_url}lists/{list_id}/tasks/{task_id}/checklistItems', json=checklist_data)
         if not resp.ok:
             raise PymstodoError(resp.status_code, resp.reason)
 
         contents = json.loads(resp.content.decode())
 
         return ChecklistItem(**contents)
+
+    def get_checklist(self, task_id: str, list_id: str, checklist_id) -> ChecklistItem:
+        '''Get a checklist inside a TaskList
+
+        Args:
+            task_id: Unique identifier for the task
+            list_id: Unique identifier for the task list
+            checklist_id: Unique identifier for the checklist
+
+        Returns:
+            A ChecklistItem inside a TaskList
+
+        Raises:
+            PymstodoError: An error occurred accessing the API
+        '''
+        self._refresh_token()
+        oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
+        resp = oa_sess.get(f'{ToDoConnection._base_api_url}lists/{list_id}/tasks/{task_id}/checklistItems/{checklist_id}')
+        if not resp.ok:
+            raise PymstodoError(resp.status_code, resp.reason)
+
+        contents = json.loads(resp.content.decode())
+
+        return ChecklistItem(**contents)
+
+    def update_checklist(self, task_id: str, list_id: str, checklist_id: str, **checklist_data: str | int | bool) -> ChecklistItem:
+        '''Update the properties of a ChecklistItem
+
+        Args:
+            task_id: Unique identifier for the task
+            list_id: Unique identifier for the task list
+            checklist_id: Unique identifier for the checklist
+            checklist_data: ChecklistItem properties from `ChecklistItem` object
+
+        Returns:
+            An updated ChecklistItem
+
+        Raises:
+            PymstodoError: An error occurred accessing the API'''
+        self._refresh_token()
+        oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
+        resp = oa_sess.patch(f'{ToDoConnection._base_api_url}lists/{list_id}/tasks/{task_id}/ChecklistItems/{checklist_id}', json=checklist_data)
+        if not resp.ok:
+            raise PymstodoError(resp.status_code, resp.reason)
+
+        contents = json.loads(resp.content.decode())
+
+        return ChecklistItem(**contents)
+
+    def delete_checklist(self, task_id: str, list_id: str, checklist_id: str) -> bool:
+        '''Delete a checklist
+
+        Args:
+            task_id: Unique identifier for the task
+            list_id: Unique identifier for the task list
+            checklist_id: Unique identifier for the checklist
+
+        Returns:
+            `True` if success
+
+        Raises:
+            PymstodoError: An error occurred accessing the API'''
+        self._refresh_token()
+        oa_sess = OAuth2Session(self.client_id, scope=ToDoConnection._scope, token=self.token)
+        resp = oa_sess.delete(f'{ToDoConnection._base_api_url}lists/{list_id}/tasks/{task_id}/ChecklistItems/{checklist_id}')
+        if not resp.ok:
+            raise PymstodoError(resp.status_code, resp.reason)
+
+        return True
+
+    def complete_checklist(self, task_id: str, list_id: str, checklist_id: str) -> ChecklistItem:
+        '''Complete a checklist
+
+        Args:
+            task_id: Unique identifier for the task
+            list_id: Unique identifier for the task list
+            checklist_id: Unique identifier for the checklist
+
+        Returns:
+            A completed ChecklistItem
+
+        Raises:
+            PymstodoError: An error occurred accessing the API'''
+        return self.update_checklist(task_id, list_id, checklist_id, isChecked=True)

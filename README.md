@@ -40,8 +40,8 @@ tasks = todo_client.get_tasks(task_list.list_id)
 
 for task in tasks:
     print(task)
-    if task.steps:
-        print("Steps:", *task.steps, sep=" ")
+    if task.checklists:
+        print("Checklists:", *task.checklists, sep=" ")
 
 ```
 
